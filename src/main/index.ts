@@ -2,8 +2,8 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { getNotes } from './lib'
-import { GetNotes } from '@shared/type'
+import { getNotes, readNote, writeNote } from './lib'
+import { GetNotes, ReadNote, WriteNote } from '@shared/type'
 
 function createWindow(): void {
   // Create the browser window.
@@ -29,10 +29,13 @@ function createWindow(): void {
       contextIsolation: true
     }
   })
+  mainWindow.webContents.openDevTools({ mode: 'detach' })
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
+
+  mainWindow.webContents.openDevTools({ mode: 'detach' })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
@@ -63,6 +66,8 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('getNotes', (_, ...args: Parameters<GetNotes>) => getNotes(...args))
+  ipcMain.handle('readNote', (_, ...args: Parameters<ReadNote>) => readNote(...args))
+  ipcMain.handle('writeNote', (_, ...args: Parameters<WriteNote>) => writeNote(...args))
 
   createWindow()
 

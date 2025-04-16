@@ -1,5 +1,4 @@
-import { NoteInfo } from '@shared/models'
-import { notesMock } from '@/store/mocks'
+import { NoteInfo, NoteContent } from '@shared/models'
 import { atom } from 'jotai'
 import { unwrap } from 'jotai/utils'
 
@@ -18,7 +17,7 @@ export const notesAtom = unwrap(notesAtomAsync, (notes) => notes)
 export const selectedNoteIndexAtom = atom<number | null>(null)
 
 // This atom represents the currently selected note
-export const selectedNoteAtom = atom((get) => {
+const selectedNoteAtomAsync = atom(async (get) => {
   // Get the current state of notes and selected note index
   const notes = get(notesAtom)
   const selectedNoteIndex = get(selectedNoteIndexAtom)
@@ -29,11 +28,45 @@ export const selectedNoteAtom = atom((get) => {
   // Get the selected note from the notes array
   const selectedNote = notes[selectedNoteIndex]
 
-  // Return the selected note with a placeholder content
+  const noteContent = await window.context.readNote(selectedNote.title)
   return {
     ...selectedNote,
-    content: `Hello from Note ${selectedNoteIndex}`
+    content: noteContent
   }
+})
+
+export const selectedNoteAtom = unwrap(
+  selectedNoteAtomAsync, 
+  (prev) =>
+    prev ?? {
+      title: '',
+      content: '',
+      lastEditTime: Date.now()
+    }
+)
+
+export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent) => {
+  const notes = get(notesAtom)
+  const selectedNote = get(selectedNoteAtom)
+
+  if (!selectedNote || !notes) return
+
+  // save on disk
+  await window.context.writeNote(selectedNote.title, newContent)
+
+  // update the note in the store
+  set(
+    notesAtom,
+    notes.map((note) => {
+      if (note.title === selectedNote.title) {
+        return {
+          ...note,
+          lastEditTime: Date.now()
+        }
+      }
+      return note
+    })
+  )
 })
 
 export const createEmptyNoteAtom = atom(null, (get, set) => {
