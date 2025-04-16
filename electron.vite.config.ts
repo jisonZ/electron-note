@@ -8,12 +8,18 @@ export default defineConfig({
     resolve: {
       alias: {
         '@/lib': resolve('src/main/lib'),
-        '@/shared': resolve('src/shared')
+        '@shared': resolve('src/shared')
       }
     }
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: {
+        '@/lib': resolve('src/main/lib'),
+        '@shared': resolve('src/shared')
+      }
+    }
   },
   renderer: {
     assetsInclude: 'src/renderer/assets/**',
