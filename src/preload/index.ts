@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { GetNotes, ReadNote, WriteNote } from '@shared/type'
+import { GetNotes, ReadNote, WriteNote, CreateNote } from '@shared/type'
 
 if (!process.contextIsolated) {
   throw new Error('contextIsolation must be enabled')
@@ -11,7 +11,8 @@ try {
     locale: navigator.language,
     getNotes: (...args: Parameters<GetNotes>) => ipcRenderer.invoke('getNotes', ...args),
     readNote: (...args: Parameters<ReadNote>) => ipcRenderer.invoke('readNote', ...args),
-    writeNote: (...args: Parameters<WriteNote>) => ipcRenderer.invoke('writeNote', ...args)
+    writeNote: (...args: Parameters<WriteNote>) => ipcRenderer.invoke('writeNote', ...args),
+    createNote: (...args: Parameters<CreateNote>) => ipcRenderer.invoke('createNote', ...args)
   })
 } catch (error) {
   console.error(error)
