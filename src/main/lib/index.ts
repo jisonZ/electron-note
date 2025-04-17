@@ -2,10 +2,13 @@ import { appDirectoryName, fileEncoding } from '@shared/constants'
 import { NoteInfo } from '@shared/models'
 import { homedir } from 'os'
 import { readdir, stat, readFile } from 'fs/promises'
-import { ensureDir, writeFile } from 'fs-extra'
-import { CreateNote, WriteNote } from '@shared/type'
+import { ensureDir, writeFile, remove } from 'fs-extra'
+import { CreateNote, DeleteNote, WriteNote, GetNotes } from '@shared/type'
 import { dialog } from 'electron'
 import path from 'path'
+import { isEmpty } from 'lodash'
+import welcomeNote from '../../../resources/welcomeNote.md?asset'
+
 // export const getRootDir = () => {
 //   return `${__dirname}/${appDirectoryName}`
 // }
@@ -17,10 +20,9 @@ export const getNotesDir = () => {
   return `${getRootDir()}/${appDirectoryName}`
 }
 
-export const getNotes = async () => {
-  console.log('getNotes')
+export const getNotes: GetNotes = async () => {
   const notesDir = getNotesDir()
-  console.log('notesDir', notesDir)
+
   await ensureDir(notesDir)
 
   const notesFileNames = await readdir(notesDir, {
@@ -29,6 +31,13 @@ export const getNotes = async () => {
   })
 
   const notes = notesFileNames.filter((fileName) => fileName.endsWith('.md'))
+
+  if (isEmpty(notes)) {
+    console.info('No notes found, creating welcome note')
+    const content = await readFile(welcomeNote, {encoding: fileEncoding})
+    await writeFile(`${notesDir}/Welcome.md`, content, {encoding: fileEncoding})
+    notes.push('Welcome.md')
+  }
 
   return Promise.all(notes.map(getNoteInfoFromFilename))
 }
@@ -90,4 +99,27 @@ export const createNote: CreateNote = async () => {
   await writeFile(filePath, '')
 
   return filename
+}
+
+export const deleteNote: DeleteNote = async (filename) => {
+  const noteDir = getNotesDir()
+
+  const { response } = await dialog.showMessageBox({
+    type: 'warning',
+    title: 'Delete Note',
+    message: `Are you sure you want to delete ${filename}?`,
+    buttons: ['Cancel', 'Delete'],
+    defaultId: 0, //  Specifies which button is selected by default (0 = 'Cancel')
+    cancelId: 0 // Specifies which button is triggered when the user presses Escape (0 = 'Cancel')
+  })
+
+  if (response === 0) {
+    console.info('Note deletion canceled')
+    return false
+  }
+
+  console.info(`Deleting note: ${filename}`)
+  await remove(`${noteDir}/${filename}.md`)
+
+  return true
 }
